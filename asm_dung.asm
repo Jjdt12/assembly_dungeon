@@ -17,7 +17,7 @@
     _initialize_map:
             mov		r13, map + 0x9E5                ; Move an address into r13 for the players starting position
             mov		byte[r13], 0x40                 ; Move the "@" character into that address
-            mov		byte[keys], 0x30            ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
+            mov		byte[keys], 0x30                ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
     _level_print:
             mov		byte[treasure], 0x30            ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
 
@@ -29,7 +29,7 @@
     _game_loop:
             call    _clear_screen                   ; Call _clear_screen to clear the terminal
             call	_print_dungeon                  ; Print the dungeon
-            cmp		byte[treasure], 0x39            ; Check if treasure = 9
+            cmp		byte[treasure], 0x3             ; Check if treasure = 9
             je		.next_level                     ; If treasure = 9, jump to _next_level
             jmp		.begin                          ; If treasure != 9, begin normal game loop
     .next_level:
