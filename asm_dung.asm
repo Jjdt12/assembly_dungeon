@@ -157,13 +157,13 @@
             push    title                           ; Push the address pointing to the string "title" onto the stack
             mov     r12, 8                          ; Move 6 into r12, r12 will be the loop counter
     .sys_write_loop_1:                              ; Loop to print the dungeon to the screen 
-            mov     rax, 1                          ; Move 1 into rax, setting sys_write
-            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
-            pop     rsi                             ; Pop an address off of the stack that points to the string to print
-            pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
-            syscall                                 ; Call sys_write
-            dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
-            jnz     .sys_write_loop_1               ; Jump to .sys_write_loop, the begining of our printing loop
+                mov     rax, 1                          ; Move 1 into rax, setting sys_write
+                mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+                pop     rsi                             ; Pop an address off of the stack that points to the string to print
+                pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
+                syscall                                 ; Call sys_write
+                dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
+                jnz     .sys_write_loop_1               ; Jump to .sys_write_loop, the begining of our printing loop
             call    _print_num                      ; Print the treasure value after translating to ASCII
             push    nothing_len                     ; Push "nothing_len", the size of the "nothing", string onto the stack
             push    nothing                         ; Push the address pointing to the string "nothing" onto the stack
@@ -173,13 +173,13 @@
             push    keys_string                     ; Push the address pointing to the string "keys_string" onto the stack
             mov     r12, 3
     .sys_write_loop_2:                              ; Loop to print the dungeon to the screen 
-            mov     rax, 1                          ; Move 1 into rax, setting sys_write
-            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
-            pop     rsi                             ; Pop an address off of the stack that points to the string to print
-            pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
-            syscall                                 ; Call sys_write
-            dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
-            jnz     .sys_write_loop_2               ; Jump to .sys_write_loop, the begining of our printing loop
+                mov     rax, 1                          ; Move 1 into rax, setting sys_write
+                mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+                pop     rsi                             ; Pop an address off of the stack that points to the string to print
+                pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
+                syscall                                 ; Call sys_write
+                dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
+                jnz     .sys_write_loop_2               ; Jump to .sys_write_loop, the begining of our printing loop
             ret                                     ; Return from _print_dungeon subroutine back to _game_loop (the main game loop)
 
     _clear_xp_bar:                  
