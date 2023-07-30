@@ -19,19 +19,20 @@
             mov     byte[r13], 0x40                 ; Move the "@" character into that address
             mov     byte[keys], 0x30                ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
     _level_print:
-            mov     byte[treasure], 0x30            ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
+            mov     byte[xp], 0x10                  ; Put 0x10 (decimal 16) into xp
+            call    _clear_xp_bar                   ; Clear the XP bar
 
 
 ;----------------------------------
-;----- Start of Main Game Loop
+;----- Start of Main Game Loop 
 ;----------------------------------
 
     _game_loop:
             call    _clear_screen                   ; Call _clear_screen to clear the terminal
             call    _print_dungeon                  ; Print the dungeon
-            cmp     byte[treasure], 0x39            ; Check if treasure = 9
-            je      .next_level                     ; If treasure = 9, jump to _next_level
-            jmp     .begin                          ; If treasure != 9, begin normal game loop
+            cmp     byte[xp], 0x1f                  ; Check if xp >= 25
+            je      .next_level                     ; If xp >= 25 jump to _next_level
+            jmp     .begin                          ; If treasure not >= 25, begin normal game loop
     .next_level:
             inc     byte[level_num]                 ; Increment level number by one
             jmp     _level_print                    ; Print new level. 
@@ -125,6 +126,9 @@
     .fight:
             mov     byte[r9], "$"                   ; Replace "E" with "$", indicating the player has killed an enemy
             mov     byte[r13], 0x40                 ; If player has killed an enemy, move "@" into original position,keeping player still
+            mov     r12b, [xp]                      ; Move the value of xp into the lower byte of r12
+            mov     byte[xp_string + r12], 0x3d     ; Replace the next " " in the XP bar with "="
+            add     byte[xp], 0x01                  ; Add 0x01 to the value in "xp"
             ret 
             
     _print_dungeon:
@@ -138,6 +142,12 @@
             push    treasure                        ; Push the address pointing to the string "treasure" onto the stack
             push    treasure_string_len             ; Push "treasure_string_len",the size of the "treasure_string" string, onto the stack
             push    treasure_string                 ; Push the address pointing to the string "treasure_string" onto the stack
+            push    xp_string_len                   ; Push "xp_string_len",the size of the "treasure_string" string, onto the stack
+            push    xp_string                       ; Push the address pointing to the string "xp_string" onto the stack
+            push    hitpoints_len                   ; Push "hitpoints_len", the size of the "hitpoints" string, onto the stack
+            push    hitpoints                       ; Push the address pointing to the string "hitpoints" onto the stack
+            push    hitpoints_string_len            ; Push "hitpoints_string_len",the size of the "hitpoints_string" string, onto the stack
+            push    hitpoints_string                ; Push the address pointing to the string "hitpoints_string" onto the stack
             push    map_len                         ; Push "map_len", the size of the "map" string, onto the stack   
             push    map                             ; Push the address pointing to the string "map" onto the stack
             push    level_num_len                   ; Push "level_num_len", the size of the "level_num" string, onto the stack
@@ -146,7 +156,7 @@
             push    level_string                    ; Push the address pointing to the string "level_string" onto the stack
             push    title_len                       ; Push "title_len", the size of the "title" string, onto the stack  
             push    title                           ; Push the address pointing to the string "title" onto the stack
-            mov     r12, 9                          ; Move 6 into r12, r12 will be the loop counter
+            mov     r12, 12                         ; Move 6 into r12, r12 will be the loop counter
     .sys_write_loop:                                ; Loop to print the dungeon to the screen 
             mov     rax, 1                          ; Move 1 into rax, setting sys_write
             mov     rdi, 1                          ; Move 1 into rdi, setting std_out
@@ -156,6 +166,17 @@
             dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
             jnz     .sys_write_loop                 ; Jump to .sys_write_loop, the begining of our printing loop
             ret                                     ; Return from _print_dungeon subroutine back to _game_loop (the main game loop)
+
+    _clear_xp_bar:                  
+            mov     rcx, 15                         ; Move 15 into rcx, rcx will be our loop counter
+            mov     r12, 16                         ; Move 16 into r12, the offset location of the first "=" we will erase
+    .clear_chars:
+            mov     byte[xp_string + r12], 0x20     ; Replace the "=" at the offset with " "
+            dec     rcx                             ; Decrement (decrease) rcx, our loop iteration counter, reducing it by one 
+            inc     r12                             ; Increment (increase) r12, our offset location, increasing it by one
+            cmp     rcx, 0                          ; Check if rcx = 0
+            jnz     .clear_chars                    ; If rcx != 0, jump to .clear_chars, the start of our loop  
+            ret                                     ; If rcx = 0, return from subroutine
 
     _clear_screen:
             mov     rax, 1                          ; Move 1 into rax, setting sys_write

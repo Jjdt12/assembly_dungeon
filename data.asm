@@ -3,6 +3,12 @@
 keys:                       db      0x30
 keys_len                    equ     $ - keys
 
+xp:                         db      0x10
+xp_len                      equ     $ - xp
+
+hitpoints:                  db      0x39
+hitpoints_len               equ     $ - hitpoints
+
 treasure:	                db      0x30
 treasure_len                equ     $ - treasure
 
@@ -35,6 +41,14 @@ map:
                             db      32,32,32,32,32,32,32,32,32,"[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]",10
                             db      32,32,32,32,32,32,32,32,32,"   										                                                                                                                                  ",10
 map_len                     equ     $ - map
+
+hitpoints_string:           db      10,
+                            db      32,32,32,32,32,32,32,32,32,"HITPOINTS: "
+hitpoints_string_len        equ     $ - hitpoints_string
+
+xp_string:                  db      10,
+                            db      32,32,32,32,32,32,32,32,32,"XP: |=               |"
+xp_string_len               equ     $ - xp_string
 
 treasure_string:            db      10,
                             db      32,32,32,32,32,32,32,32,32,"TREASURE HORDE: "
