@@ -15,11 +15,19 @@
     _start:	
 
     _initialize_map:
+<<<<<<< HEAD
             mov		r13, map + 0x9E5                ; Move an address into r13 for the players starting position
             mov		byte[r13], 0x40                 ; Move the "@" character into that address
             mov		byte[keys], 0x30            ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
     _level_print:
             mov		byte[treasure], 0x30            ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
+=======
+            mov     r13, map + 0x9E5                ; Move an address into r13 for the players starting position
+            mov     byte[r13], 0x40                 ; Move the "@" character into that address
+            mov     byte[keys], 0x30                ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
+    _level_print:
+            mov     byte[treasure], 0x30            ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
+>>>>>>> develop
 
 
 ;----------------------------------
@@ -28,6 +36,7 @@
 
     _game_loop:
             call    _clear_screen                   ; Call _clear_screen to clear the terminal
+<<<<<<< HEAD
             call	_print_dungeon                  ; Print the dungeon
             cmp		byte[treasure], 0x39            ; Check if treasure = 9
             je		.next_level                     ; If treasure = 9, jump to _next_level
@@ -35,6 +44,15 @@
     .next_level:
             inc		byte[level_num]                 ; Increment level number by one
             jmp		_level_print                    ; Print new level. 
+=======
+            call    _print_dungeon                  ; Print the dungeon
+            cmp     byte[treasure], 0x39            ; Check if treasure = 9
+            je      .next_level                     ; If treasure = 9, jump to _next_level
+            jmp     .begin                          ; If treasure != 9, begin normal game loop
+    .next_level:
+            inc     byte[level_num]                 ; Increment level number by one
+            jmp     _level_print                    ; Print new level. 
+>>>>>>> develop
     .begin:
             call    _no_enter                       ; Don't wait for 'enter' key on input
                                                     ; Check for movement input - WASD
@@ -77,8 +95,13 @@
 ;=============================
 
     _exit:
+<<<<<<< HEAD
             mov 	rax, 60                         ; Move 60 into rax, the exit system call
             xor 	rdi, rdi                        ; Make rdi 0, setting the exit code to 0. 
+=======
+            mov     rax, 60                         ; Move 60 into rax, the exit system call
+            xor     rdi, rdi                        ; Make rdi 0, setting the exit code to 0. 
+>>>>>>> develop
             syscall                                 ; Call exit
 
 ;=============================
@@ -86,6 +109,7 @@
 ;=============================
 
     _move:
+<<<<<<< HEAD
             call	_clear_screen                   ; Call _clear_screen to clear the terminal
             cmp		byte[r9],"["                    ; Check if the position the player is moving into = "["
             je		.wall                           ; If the position the player is moving into = "[", jump to .wall
@@ -126,6 +150,48 @@
             mov		byte[r9], "$"                   ; Replace "E" with "$", indicating the player has killed an enemy
             mov		byte[r13], 0x40                 ; If player has killed an enemy, move "@" into original position,keeping player still
             ret 
+=======
+            call    _clear_screen                   ; Call _clear_screen to clear the terminal
+            cmp     byte[r9],"["                    ; Check if the position the player is moving into = "["
+            je      .wall                           ; If the position the player is moving into = "[", jump to .wall
+            cmp     byte[r9],"]"                    ; Else, check if the position the player is moving into = "]"
+            je      .wall                           ; If the position the player is moving into = "]", jump to .wall
+            cmp     byte[r9],"E"                    ; Check if the position the player is moving into = "E"
+            je      .yes_fight                      ; If the poisition the player is moving into = "E", jump to .yes_fight
+            jmp     .no_fight                       ; Else, if the poisition the player is moving into != "E", jump to .no_fight
+    .yes_fight:
+            jmp     .fight                          ; Jump to .fight
+    .no_fight:
+            cmp     byte[r9],"$"                    ; Check if the position the player is moving into = "$"
+            jne     .no_treasure                    ; If the position the player is moving into != "$", jump to .no_treasure
+            mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "$", replace the "$" with " ". 
+            inc     byte[treasure]                  ; and increment (increase) treasure count by one. 
+            ret                                     ; Return from _move subroutine back to _game_loop (the main game loop) 
+    .no_treasure:
+            cmp     byte[r9],"K"                    ; Check if the position the player is moving into = "K"
+            jne     .no_key                         ; If the position the player is moving into != "K", jump to .no_key
+            mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "K", replace the "K" with " ". 
+            inc     byte[keys]                      ; and increment (increase) key count by one. 
+            ret                                     ; Return from _move subroutine back to _game_loop (the main game loop) 
+    .no_key:
+            cmp     byte[r9], 0x7c                  ; Check if the position the player is moving into = "|", a door. 
+            jne     .no_door                        ; If the position the player is moving into != "|", jump to .no_door
+            cmp     byte[keys], 0x30                ; Else, if the position the player is moving into = "|", check if "keys" = 0
+            je      .wall                           ; If "keys" = 0, jump to .wall, treating the door as a wall. 
+            mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "|", replace the "|" with " ". 
+            dec     byte[keys]                      ; and decrement (decrease) "keys" count, reducing it by one. 
+            ret                                     ; Return from _move subroutine back to _game_loop (the main game loop) 
+    .no_door:
+            mov     byte[r13], 0x20                 ; Replace the players current position ("@") with " "
+            mov     r13, r9                         ; Move player into new position
+    .wall:
+            mov     byte[r13], 0x40                 ; If the player hits a wall, move "@" into original position, keeping player still 
+            ret                                     ; Return from the _move subroutine back to the _game_loop (the main game loop)
+    .fight:
+            mov     byte[r9], "$"                   ; Replace "E" with "$", indicating the player has killed an enemy
+            mov     byte[r13], 0x40                 ; If player has killed an enemy, move "@" into original position,keeping player still
+            ret      
+>>>>>>> develop
             
     _print_dungeon:
             push    nothing_len                     ; Push "nothing_len", the size of the "nothing", string onto the stack
@@ -148,8 +214,13 @@
             push    title                           ; Push the address pointing to the string "title" onto the stack
             mov     r12, 9                          ; Move 6 into r12, r12 will be the loop counter
     .sys_write_loop:                                ; Loop to print the dungeon to the screen 
+<<<<<<< HEAD
             mov		rax, 1                          ; Move 1 into rax, setting sys_write
             mov		rdi, 1                          ; Move 1 into rdi, setting std_out
+=======
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+>>>>>>> develop
             pop     rsi                             ; Pop an address off of the stack that points to the string to print
             pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
             syscall                                 ; Call sys_write
@@ -160,8 +231,13 @@
     _clear_screen:
             mov     rax, 1                          ; Move 1 into rax, setting sys_write
             mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+<<<<<<< HEAD
             mov	    rsi, clear_screen               ; Move the address pointing to the string clear_screen into rsi
             mov	    rdx, clear_screen_len           ; Move clear_screen_len, the size of the string, into rdx
+=======
+            mov     rsi, clear_screen               ; Move the address pointing to the string clear_screen into rsi
+            mov     rdx, clear_screen_len           ; Move clear_screen_len, the size of the string, into rdx
+>>>>>>> develop
             syscall                                 ; Call sys_write
             ret                                     ; Return from the _clear_screen subroutine back to _game_loop (the main game loop)
 
