@@ -29,7 +29,7 @@
     _game_loop:
             call    _clear_screen                   ; Call _clear_screen to clear the terminal
             call    _print_dungeon                  ; Print the dungeon
-            cmp		byte[treasure], 0x39            ; Check if treasure = 9
+            cmp     byte[treasure], 0x39            ; Check if treasure = 9
             je      .next_level                     ; If treasure = 9, jump to _next_level
             jmp     .begin                          ; If treasure != 9, begin normal game loop
     .next_level:
