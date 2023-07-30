@@ -17,7 +17,7 @@
     _initialize_map:
             mov     r13, map + 0x9E5                ; Move an address into r13 for the players starting position
             mov     byte[r13], 0x40                 ; Move the "@" character into that address
-            mov     byte[keys], 0x30                ; Put 0x30 (decimal 0) into treasure, initializing treasure to 0
+            ;mov     byte[keys], 0x30                ; Put 0x00 (decimal 0) into keys, initializing keys to 0
     _level_print:
             mov     byte[xp], 0x10                  ; Put 0x10 (decimal 16) into xp
             call    _clear_xp_bar                   ; Clear the XP bar
@@ -132,14 +132,6 @@
             ret 
             
     _print_dungeon:
-            push    nothing_len                     ; Push "nothing_len", the size of the "nothing", string onto the stack
-            push    nothing                         ; Push the address pointing to the string "nothing" onto the stack
-            push    keys_len                        ; Push "keys_len", the size of the "keys" string, onto the stack
-            push    keys                            ; Push the address pointing to the string "keys" onto the stack
-            push    keys_string_len                 ; Push "keys_string_len", the size of the "keys_string" string, onto the stack
-            push    keys_string                     ; Push the address pointing to the string "keys_string" onto the stack
-            push    treasure_len                    ; Push "treasure_len", the size of the "treasure" string, onto the stack
-            push    treasure                        ; Push the address pointing to the string "treasure" onto the stack
             push    treasure_string_len             ; Push "treasure_string_len",the size of the "treasure_string" string, onto the stack
             push    treasure_string                 ; Push the address pointing to the string "treasure_string" onto the stack
             push    xp_string_len                   ; Push "xp_string_len",the size of the "treasure_string" string, onto the stack
@@ -156,7 +148,7 @@
             push    level_string                    ; Push the address pointing to the string "level_string" onto the stack
             push    title_len                       ; Push "title_len", the size of the "title" string, onto the stack  
             push    title                           ; Push the address pointing to the string "title" onto the stack
-            mov     r12, 12                         ; Move 6 into r12, r12 will be the loop counter
+            mov     r12, 8                          ; Move 6 into r12, r12 will be the loop counter
     .sys_write_loop:                                ; Loop to print the dungeon to the screen 
             mov     rax, 1                          ; Move 1 into rax, setting sys_write
             mov     rdi, 1                          ; Move 1 into rdi, setting std_out
@@ -165,6 +157,22 @@
             syscall                                 ; Call sys_write
             dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
             jnz     .sys_write_loop                 ; Jump to .sys_write_loop, the begining of our printing loop
+            call    _print_num
+            push    nothing_len                     ; Push "nothing_len", the size of the "nothing", string onto the stack
+            push    nothing                         ; Push the address pointing to the string "nothing" onto the stack
+            push    keys_len                        ; Push "keys_len", the size of the "keys" string, onto the stack
+            push    keys                            ; Push the address pointing to the string "keys" onto the stack
+            push    keys_string_len                 ; Push "keys_string_len", the size of the "keys_string" string, onto the stack
+            push    keys_string                     ; Push the address pointing to the string "keys_string" onto the stack
+            mov     r12, 3
+    .sys_write_loop_2:                              ; Loop to print the dungeon to the screen 
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            pop     rsi                             ; Pop an address off of the stack that points to the string to print
+            pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
+            syscall                                 ; Call sys_write
+            dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
+            jnz     .sys_write_loop_2                 ; Jump to .sys_write_loop, the begining of our printing loop
             ret                                     ; Return from _print_dungeon subroutine back to _game_loop (the main game loop)
 
     _clear_xp_bar:                  
@@ -185,6 +193,33 @@
             mov	    rdx, clear_screen_len           ; Move clear_screen_len, the size of the string, into rdx
             syscall                                 ; Call sys_write
             ret                                     ; Return from the _clear_screen subroutine back to _game_loop (the main game loop)
+
+    _print_num:
+        mov     rax, [treasure]                     ; Move the current number into rax
+        mov     r9, 2                               ; Set r9 to 2 for indexing into output_buffer
+                                            
+    _each_digit_loop:
+            mov     rdx, 0                          ; Clear rdx to hold the remainder of division
+            mov     rcx, 10                         ; Set rcx to 10, the quotiant for division
+            div     rcx                             ; Divide rax by rcx (current digit/10) and put the remainder in rdx
+
+            add     rdx, 0x30                       ; Add 0x30 to the digit, converting it to it's ascii value
+            mov     [output_buffer+r9], dl          ; Store digit in the output_buffer, from left to right
+            dec     r9                              ; Move offset back one
+
+            cmp     rax, 0                          ; Check if there are more digits
+            jnz     _each_digit_loop                ; If there are no more digits, loop again
+
+                                                    ; Print the result of the conversion
+        xor     rsi, rsi
+        mov     rax, 1                              ; Move 1 into rax, setting the write system call
+        mov     rdi, 1                              ; Move 1 into rdi, setting std out
+        mov     rsi, output_buffer                  ; Move 'output_buffer' into rsi, the pointer to the string to be printed
+        mov     rdx, 3                              ; Move the length of the string into rdx
+        syscall                                     ; Call write
+
+
+        ret                                         ; Return from subroutine
 
                                                     ; Disable canonical mode in the terminal
     _no_enter:
