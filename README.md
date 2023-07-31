@@ -1,13 +1,13 @@
 # assembly_dungeon
-A simple dungeon crawler game engine. 
+A simple dungeon crawler game engine.\ 
 
-Move - WASD
-Use Potion - p
+Move - WASD\
+Use Potion - p\
 
-P  = Potion
-K  = Key
-E  = Enemy
-$  = Treasure
-|  = Door
-[] = Wall
-X  = Exit
+P  = Potion\
+K  = Key\
+E  = Enemy\
+$  = Treasure\
+|  = Door\
+[] = Wall\
+X  = Exit\
