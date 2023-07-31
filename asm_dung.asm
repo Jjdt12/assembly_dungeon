@@ -17,7 +17,6 @@
     _initialize_map:
             mov     r13, map + 0x9E5                ; Move an address into r13 for the players starting position
             mov     byte[r13], 0x40                 ; Move the "@" character into that address
-            ;mov     byte[keys], 0x30                ; Put 0x00 (decimal 0) into keys, initializing keys to 0
     _level_print:
             mov     byte[xp], 0x10                  ; Put 0x10 (decimal 16) into xp
             call    _clear_xp_bar                   ; Clear the XP bar
@@ -32,13 +31,22 @@
             call    _print_dungeon                  ; Print the dungeon
             cmp     byte[xp], 0x1f                  ; Check if xp >= 25
             je      .next_level                     ; If xp >= 25 jump to _next_level
-            jmp     .begin                          ; If treasure not >= 25, begin normal game loop
+            jmp     .begin                          ; If xp not >= 25, begin normal game loop
     .next_level:
             inc     byte[level_num]                 ; Increment level number by one
             jmp     _level_print                    ; Print new level. 
     .begin:
             call    _no_enter                       ; Don't wait for 'enter' key on input
-                                                    ; Check for movement input - WASD
+                                                    ; Check for input
+            cmp     byte[rsi], "p"                  ; Check if input = "p"
+            je      .potion                         ; If input = "p", jump to .potion
+            jmp     .not_potion                     ; Else if input != "p", jump to .not_potion
+    .potion:
+            cmp     byte[potions], 0x00             ; Check if "potions" = 0
+            je      .not_potion                     ; If "potions" = 0, jump to .not_potion
+            mov     byte[hitpoints], 0x09           ; Else, if "potions" = 0, move 9 into "hitpoints", raising HP back to max (9). 
+            dec     byte[potions]                   ; Decrement (decrease) "potions", reducing by 1.
+    .not_potion:
             cmp     byte[rsi], "w"                  ; Check if input = "w"
             lea     r9, byte[r13-0xb4]              ; Load address of the space above current player position into r9
             je      .up                             ; If input = "w", jump to .up
@@ -98,89 +106,197 @@
     .yes_fight:
             jmp     .fight                          ; Jump to .fight
     .no_fight:
+            cmp     byte[r9], "X"                   ; Check if the position the player is moving into = "X", an exit 
+            je      .ending                         ; If the poisition the player is moving into = "X", jump to .ending
+            jmp     .not_ending                     ; Else, if the poisition the player is moving into != "X", jump to .not_ending
+    .not_ending:
             cmp     byte[r9],"$"                    ; Check if the position the player is moving into = "$"
             jne     .no_treasure                    ; If the position the player is moving into != "$", jump to .no_treasure
             mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "$", replace the "$" with " ". 
             inc     byte[treasure]                  ; and increment (increase) treasure count by one. 
-            ret                                     ; Return from _move subroutine back to _game_loop (the main game loop) 
+            ret                                     ; Return from _move subroutine back to
     .no_treasure:
             cmp     byte[r9],"K"                    ; Check if the position the player is moving into = "K"
             jne     .no_key                         ; If the position the player is moving into != "K", jump to .no_key
             mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "K", replace the "K" with " ". 
             inc     byte[keys]                      ; and increment (increase) key count by one. 
-            ret                                     ; Return from _move subroutine back to _game_loop (the main game loop) 
+            ret                                     ; Return from _move subroutine 
     .no_key:
             cmp     byte[r9], 0x7c                  ; Check if the position the player is moving into = "|", a door. 
             jne     .no_door                        ; If the position the player is moving into != "|", jump to .no_door
-            cmp     byte[keys], 0x30                ; Else, if the position the player is moving into = "|", check if "keys" = 0
+            cmp     byte[keys], 0x00                ; Else, if the position the player is moving into = "|", check if "keys" = 0
             je      .wall                           ; If "keys" = 0, jump to .wall, treating the door as a wall. 
             mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "|", replace the "|" with " ". 
             dec     byte[keys]                      ; and decrement (decrease) "keys" count, reducing it by one. 
-            ret                                     ; Return from _move subroutine back to _game_loop (the main game loop) 
+            ret                                     ; Return from _move subroutine 
     .no_door:
             cmp     byte[r9],"F"                    ; Check if the position the player is moving into = "F"
             jne     .no_food                        ; If the position the player is moving into != "F", jump to .no_food
             mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "F", replace the "F" with " ". 
-            mov     byte[hitpoints], 0x39           ; and change the players hitpoints to maximum (9). 
-            ret                                     ; Return from _move subroutine back to _game_loop (the main game loop) 
+            mov     byte[hitpoints], 0x09           ; and change the players hitpoints to maximum (9). 
+            ret                                     ; Return from _move subroutine 
     .no_food:
+            cmp     byte[r9],"P"                    ; Check if the position the player is moving into = "P"
+            jne     .no_potion                      ; If the position the player is moving into != "P", jump to .no_portion
+            mov     byte[r9], 0x20                  ; Else, if the poisition the player is moving into = "P", replace the "P" with " ". 
+            inc     byte[potions]                   ; and increment (increase) the players potion count by 1. 
+            ret                                     ; Return from _move subroutine 
+    .no_potion:
             mov     byte[r13], 0x20                 ; Replace the players current position ("@") with " "
             mov     r13, r9                         ; Move player into new position
     .wall:
             mov     byte[r13], 0x40                 ; If the player hits a wall, move "@" into original position, keeping player still 
-            ret                                     ; Return from the _move subroutine back to the _game_loop (the main game loop)
+            ret                                     ; Return from the _move subroutine
     .fight:
             mov     byte[r9], "$"                   ; Replace "E" with "$", indicating the player has killed an enemy
+            call    _roll_d20                       ; Call _roll_d20,which stores a (very)pseudo random number between 0-20 stored in RDX
+            cmp     rdx, 5                          ; Compare the dice roll to 5
+            jle     .no_enemy_hit                   ; If the number <= 5, jumpt to .no_enemy_hit, the enemy does not hit the player
+            dec     byte[hitpoints]                 ; Else, if the number > 5, decrement "hitpoints", the enemy hits the player
+    .no_enemy_hit:
             mov     byte[r13], 0x40                 ; If player has killed an enemy, move "@" into original position,keeping player still
             mov     r12b, [xp]                      ; Move the value of xp into the lower byte of r12
             mov     byte[xp_string + r12], 0x3d     ; Replace the next " " in the XP bar with "="
             add     byte[xp], 0x01                  ; Add 0x01 to the value in "xp"
-            dec     byte[hitpoints]
             ret 
-            
+    .ending:
+            call    _ending                         ; Call _ending
+            call    _exit                           ; Call _exit
+
+    _roll_d20:
+            rdtsc                                   ; Store the processor’s time-stamp counter in EDX:EAX
+            xor     rdx, rdx                        ; Clear rdx
+            mov     rcx, 20                         ; Move 20 into rcxl the divisor
+            div     rcx                             ; Div rax by rcx, storing the remainder in rdx
+            ret                                     ; Return from _roll_d20 back to the line (instruction) after "call _roll_d20"
+
     _print_dungeon:
-            push    treasure_string_len             ; Push "treasure_string_len",the size of the "treasure_string" string, onto the stack
-            push    treasure_string                 ; Push the address pointing to the string "treasure_string" onto the stack
-            push    xp_string_len                   ; Push "xp_string_len",the size of the "treasure_string" string, onto the stack
-            push    xp_string                       ; Push the address pointing to the string "xp_string" onto the stack
-            push    hitpoints_len                   ; Push "hitpoints_len", the size of the "hitpoints" string, onto the stack
-            push    hitpoints                       ; Push the address pointing to the string "hitpoints" onto the stack
-            push    hitpoints_string_len            ; Push "hitpoints_string_len",the size of the "hitpoints_string" string, onto the stack
-            push    hitpoints_string                ; Push the address pointing to the string "hitpoints_string" onto the stack
-            push    map_len                         ; Push "map_len", the size of the "map" string, onto the stack   
-            push    map                             ; Push the address pointing to the string "map" onto the stack
-            push    level_num_len                   ; Push "level_num_len", the size of the "level_num" string, onto the stack
-            push    level_num                       ; Push the address pointing to the string "level_num" onto the stack
-            push    level_string_len                ; Push "level_string_len", the size of the "level_string" string, onto the stack
-            push    level_string                    ; Push the address pointing to the string "level_string" onto the stack
-            push    title_len                       ; Push "title_len", the size of the "title" string, onto the stack  
-            push    title                           ; Push the address pointing to the string "title" onto the stack
-            mov     r12, 8                          ; Move 6 into r12, r12 will be the loop counter
-    .sys_write_loop_1:                              ; Loop to print the dungeon to the screen 
-                mov     rax, 1                          ; Move 1 into rax, setting sys_write
-                mov     rdi, 1                          ; Move 1 into rdi, setting std_out
-                pop     rsi                             ; Pop an address off of the stack that points to the string to print
-                pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
-                syscall                                 ; Call sys_write
-                dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
-                jnz     .sys_write_loop_1               ; Jump to .sys_write_loop, the begining of our printing loop
-            call    _print_num                      ; Print the treasure value after translating to ASCII
-            push    nothing_len                     ; Push "nothing_len", the size of the "nothing", string onto the stack
-            push    nothing                         ; Push the address pointing to the string "nothing" onto the stack
-            push    keys_len                        ; Push "keys_len", the size of the "keys" string, onto the stack
-            push    keys                            ; Push the address pointing to the string "keys" onto the stack
-            push    keys_string_len                 ; Push "keys_string_len", the size of the "keys_string" string, onto the stack
-            push    keys_string                     ; Push the address pointing to the string "keys_string" onto the stack
-            mov     r12, 3
-    .sys_write_loop_2:                              ; Loop to print the dungeon to the screen 
-                mov     rax, 1                          ; Move 1 into rax, setting sys_write
-                mov     rdi, 1                          ; Move 1 into rdi, setting std_out
-                pop     rsi                             ; Pop an address off of the stack that points to the string to print
-                pop     rdx                             ; Pop an address off of the stack that points to the length of the string to print
-                syscall                                 ; Call sys_write
-                dec     r12                             ; Decrement (decreat) r12, our loop interation counter, reducing it by one.
-                jnz     .sys_write_loop_2               ; Jump to .sys_write_loop, the begining of our printing loop
-            ret                                     ; Return from _print_dungeon subroutine back to _game_loop (the main game loop)
+            call    _print_title                    ; Call _print_title to print the title string
+            call    _print_level                    ; Call _print_level to print the level string and level number
+            call    _print_map                      ; Call _print_map to print the dungeon map
+            call    _print_hitpoints                ; Call _print_hitpoints to print the hitpoints string and hitpoints number
+            call    _print_xp                       ; Call _print_xp to print the xp string and xp number
+            call    _print_treasure                 ; Call _print_treasure to print the treasure string and treasure number
+            call    _print_keys                     ; Call _print_keys to print the keys string and keys number
+            call    _print_potions                  ; Call _print_potions to print the potions string and potions number
+            call    _print_blanks                   ; Call _print_blanks to print blank lines
+            ret                                     ; Return from _print_dungeon to the line (instruction) after "call _print_dungeon"
+
+    _ending:
+            call    _clear_screen                   ; Call _clearn_screen to clear the terminal
+            call    _print_ending                   ; Call _print_ending to print the ending string 
+            call    _print_level                    ; Call _print_level to print the level string and level number
+            call    _print_map                      ; Call _print_map to print the dungeon map
+            call    _print_hitpoints                ; Call _print_hitpoints to print the hitpoints string and hitpoints number
+            call    _print_xp                       ; Call _print_xp to print the xp string and xp number
+            call    _print_treasure                 ; Call _print_treasure to print the treasure string and treasure number
+            call    _print_keys                     ; Call _print_keys to print the keys string and keys number
+            call    _print_potions                  ; Call _print_potions to print the potions string and potions number
+            call    _print_blanks                   ; Call _print_blanks to print blank lines
+            ret                                     ; Return from _print_dungeon to the line (instruction) after "call _print_dungeon"
+
+    _print_ending:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, ending                     ; Move "ending" string into rsi
+            mov     rdx, ending_len                 ; Move "ending_len" the length of the "ending" string into rdx
+            syscall                                 ; Call sys_write
+            ret                                     ; Return from _print_ending subroutine
+
+    _print_title:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, title                      ; Move "title" string into rsi
+            mov     rdx, title_len                  ; Move "title_len", the length of the "title" string into rdx
+            syscall                                 ; call sys_write
+            ret                                     ; Return from _print_title subroutine
+    
+    _print_level:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, level_string               ; Move "level_string" string into rsi
+            mov     rdx, level_string_len           ; Move "level_string_len", the length of the "level_string" string into rdx
+            syscall                                 ; Call sys_write
+            xor     rax, rax                        ; Clear rax
+            mov     rax, [level_num]                ; Move "level_num", the current player level, into rax for use in _print_num
+            call    _print_num                      ; Call _print_num
+            ret                                     ; Return from the _print_level subroutine
+
+    _print_map:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, map                        ; Move "map" string into rsi
+            mov     rdx, map_len                    ; Move "map_len", the length of the "map" string, into rdx
+            syscall                                 ; Call sys_write
+            ret                                     ; Return from the _print_map subroutine
+            
+    _print_hitpoints:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, hitpoints_string           ; Move "hitpoints_string" string into rsi
+            mov     rdx, hitpoints_string_len       ; Move "hitpoints_string_len", the length of the "hitpoints_string" string into rdx
+            syscall                                 ; Call sys_write
+            xor     rax, rax                        ; Clear rax
+            mov     rax, [hitpoints]                ; Move "hitpoints", the current player hitpoints, into rax for use in _print_num
+            call    _print_num                      ; Call _print_num
+            ret                                     ; Return from the _print_hitpoints subroutine
+
+    _print_xp:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, xp_string                  ; Move "xp_string" string into rsi
+            mov     rdx, xp_string_len              ; Move "xp_string_len", the length of the "xp_string" string into rdx
+            syscall                                 ; Call sys_write
+            ret                                     ; Return from the _print_xp subroutine
+
+    _print_treasure:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, treasure_string            ; Move "treasure_string" string into rsi
+            mov     rdx, treasure_string_len        ; Move "treasure_string_len", the length of the "treasure_string" string into rdx
+            syscall                                 ; Call sys_write
+            xor     rax, rax                        ; Clear rax
+            mov     rax, [treasure]                 ; Move "treasure", the current player treasure amount, into rax for use in _print_num
+            call    _print_num                      ; Call _print_num
+            ret                                     ; Return from the _print_treasure subroutine
+
+    _print_keys:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, keys_string                ; Move "keys_string" string into rsi
+            mov     rdx, keys_string_len            ; Move "keys_string_len", the length of the "keys_string" string into rdx
+            syscall                                 ; Call sys_write
+            xor     rax, rax                        ; Clear rax
+            mov     rax, [keys]                     ; Move "keys", the current player keys amount, into rax for use in _print_num
+            call    _print_num                      ; Call _print_num
+            ret                                     ; Return from the _print_keys subroutine
+
+    _print_potions:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, potions_string             ; Move "potions_string" string into rsi
+            mov     rdx, potions_string_len         ; Move "potions_string_len", the length of the "potions_string" string into rdx
+            syscall                                 ; Call sys_write
+            xor     rax, rax                        ; Clear rax
+            mov     rax, [potions]                  ; Move "potions", the current player potions amount, into rax for use in _print_num
+            call    _print_num                      ; Call _print_num
+            ret                                     ; Return from the _print_potions subroutine
+        
+    _print_blanks:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, nothing                    ; Move "nothing" string into rsi
+            mov     rdx, nothing_len                ; Move "nothing_len", the lengths of the "nothing" string into rdx
+            syscall                                 ; Call sys_write
+            ret                                     ; Return from the _print_blanks subroutine
+            
+    _enemy_attacks:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, enemy_attacks_string       ; Move "enemy_attacks_string" into rsi
+            mov     rdx, enemy_attacks_string_len   ; Move "enemy_attacks_string_len", the length of "enemy_attacks_string" into rdx
+            syscall                                 ; Call sys_write
+            ret                                     ; Return from the _enemy_attacks subroutine
 
     _clear_xp_bar:                  
             mov     rcx, 15                         ; Move 15 into rcx, rcx will be our loop counter
@@ -199,10 +315,10 @@
             mov	    rsi, clear_screen               ; Move the address pointing to the string clear_screen into rsi
             mov	    rdx, clear_screen_len           ; Move clear_screen_len, the size of the string, into rdx
             syscall                                 ; Call sys_write
-            ret                                     ; Return from the _clear_screen subroutine back to _game_loop (the main game loop)
+            ret                                     ; Return from the _clear_screen subroutine 
 
     _print_num:
-        mov     rax, [treasure]                     ; Move the current number into rax
+                                                    ; rax has our number value to be converted to ascii and printed 
         mov     r9, 2                               ; Set r9 to 2 for indexing into output_buffer
     .each_digit_loop:
             mov     rdx, 0                          ; Clear rdx to hold the remainder of division
@@ -219,6 +335,7 @@
         mov     rsi, output_buffer                  ; Move 'output_buffer' into rsi, the pointer to the string to be printed
         mov     rdx, 3                              ; Move the length of the string into rdx
         syscall                                     ; Call write
+        mov     qword[output_buffer], 0x00
         ret                                         ; Return from subroutine
 
                                                     ; Disable canonical mode in the terminal
