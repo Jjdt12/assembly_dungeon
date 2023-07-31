@@ -2,7 +2,7 @@
 A simple dungeon crawler game engine.\ 
 
 Move - WASD\
-Use Potion - p\
+Use Potion - p
 
 P  = Potion\
 K  = Key\
