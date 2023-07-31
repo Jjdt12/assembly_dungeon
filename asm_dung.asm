@@ -153,6 +153,12 @@
             cmp     rdx, 5                          ; Compare the dice roll to 5
             jle     .no_enemy_hit                   ; If the number <= 5, jumpt to .no_enemy_hit, the enemy does not hit the player
             dec     byte[hitpoints]                 ; Else, if the number > 5, decrement "hitpoints", the enemy hits the player
+            cmp     byte[hitpoints], 0x00           ; Compare hitpoints to 0
+            je      .slain                          ; If "hitpoints" = 0, jump to .slain, the player is killed
+            jmp     .no_enemy_hit                   ; Else if "hitpoints" != 0, jump to .no_enemy_hit
+    .slain:
+            call    _slain                          ; If hitpoints = 0, call _slain, the player has been killed
+            call    _exit                           ; Call _exit
     .no_enemy_hit:
             mov     byte[r13], 0x40                 ; If player has killed an enemy, move "@" into original position,keeping player still
             mov     r12b, [xp]                      ; Move the value of xp into the lower byte of r12
@@ -195,11 +201,32 @@
             call    _print_blanks                   ; Call _print_blanks to print blank lines
             ret                                     ; Return from _print_dungeon to the line (instruction) after "call _print_dungeon"
 
+    _slain:
+            call    _clear_screen                   ; Call _clearn_screen to clear the terminal
+            call    _print_slain                    ; Call _print_ending to print the ending string 
+            call    _print_level                    ; Call _print_level to print the level string and level number
+            call    _print_map                      ; Call _print_map to print the dungeon map
+            call    _print_hitpoints                ; Call _print_hitpoints to print the hitpoints string and hitpoints number
+            call    _print_xp                       ; Call _print_xp to print the xp string and xp number
+            call    _print_treasure                 ; Call _print_treasure to print the treasure string and treasure number
+            call    _print_keys                     ; Call _print_keys to print the keys string and keys number
+            call    _print_potions                  ; Call _print_potions to print the potions string and potions number
+            call    _print_blanks                   ; Call _print_blanks to print blank lines
+            ret                                     ; Return from _print_dungeon to the line (instruction) after "call _print_dungeon"
+
     _print_ending:
             mov     rax, 1                          ; Move 1 into rax, setting sys_write
             mov     rdi, 1                          ; Move 1 into rdi, setting std_out
             mov     rsi, ending                     ; Move "ending" string into rsi
             mov     rdx, ending_len                 ; Move "ending_len" the length of the "ending" string into rdx
+            syscall                                 ; Call sys_write
+            ret                                     ; Return from _print_ending subroutine
+
+    _print_slain:
+            mov     rax, 1                          ; Move 1 into rax, setting sys_write
+            mov     rdi, 1                          ; Move 1 into rdi, setting std_out
+            mov     rsi, slain                      ; Move "slain" string into rsi
+            mov     rdx, slain_len                  ; Move "slain_len" the length of the "ending" string into rdx
             syscall                                 ; Call sys_write
             ret                                     ; Return from _print_ending subroutine
 
