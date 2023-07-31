@@ -10,4 +10,4 @@ E  = Enemy\
 $  = Treasure\
 |  = Door\
 [] = Wall\
-X  = Exit\
+X  = Exit
